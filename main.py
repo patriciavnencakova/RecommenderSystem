@@ -108,15 +108,14 @@ class Evaluator:
         return result
 
 
-# treba zmenit
 class RandomRS:
     def __init__(self, courses):
         self.courses = courses
 
     def predict(self, data):
         result = list()
-        for i in range(5):
-            result.append(random.randint(0, len(self.courses)))
+        for i in range(len(self.courses)):
+            result.append(random.uniform(0, 1))
         return result
 
 
