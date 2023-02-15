@@ -82,7 +82,7 @@ def get_courses(database):
         # preindexovanie id predmetov
         courses_dict[int(row['idpred'])] = index
     con.close()
-    return courses_array
+    return courses_dict
 
 class Evaluator:
     def __init__(self, number_of_courses, test_data):
