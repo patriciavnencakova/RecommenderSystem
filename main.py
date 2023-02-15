@@ -1,6 +1,7 @@
 import random
 import sqlite3
 
+import numpy as np
 import pandas as pd
 
 
@@ -12,7 +13,8 @@ def main():
     #     print(dato[1])
     #     print(dato[2])
     #     print()
-    courses = get_courses("ais2022.db")
+    courses, number_of_courses = get_courses("ais2022.db")
+    # print(number_of_courses)
     model1 = RandomRS(courses)
     # print(model1.predict())
 
@@ -41,23 +43,24 @@ def load_all_data(database):
             years_per_student_array.append(row['akrok'])
 
         print("student", student)
-
+        # x_courses = predmety, ktore som mal
         x_courses_array = []
         for year in years_per_student_array:
             all_data_item = []
             y_courses = pd.read_sql_query(f"SELECT idpred"
                                           f" FROM export"
                                           f" WHERE id = {student} AND akrok = '{year}'", con)
+            # y_courses = predmety, ktore som zapisal
             y_courses_array = []
             for index, row in y_courses.iterrows():
                 y_courses_array.append(int(row['idpred']))
             all_data_item.append(x_courses_array.copy())
             all_data_item.append(y_courses_array)
             all_data_item.append(year)
-            # print(all_data_item)
+            print(all_data_item)
             all_data.append(all_data_item)
             x_courses_array.extend(y_courses_array)
-        # print()
+        print()
     con.close()
     return all_data
 
@@ -78,37 +81,62 @@ def get_courses(database):
     courses = pd.read_sql_query("SELECT DISTINCT idpred "
                                 "FROM predmet", con)
     courses_array = []
+    number_of_courses = len(courses)
     for index, row in courses.iterrows():
         courses_array.append(int(row['idpred']))
     con.close()
     return courses_array
+
+class Evaluator:
+    def __init__(self, number_of_courses, test_data):
+        self.number_of_courses = number_of_courses
+        self.test_data = test_data
+
+    def evaluate(self, trained_model, test_data):
+        RMSEs = []
+        for data in test_data:
+            # chcem predikovat predmety, ktore som skutocne zapisal
+            reality = test_data[1]
+            # na predikovanie posielam len predmety, ktore som mal zapisane
+            prediction = trained_model.predict(data[0])
+            RMSE = 0
+            for i in range(self.number_of_courses):
+                if i in reality:
+                    RMSE += np.power(prediction[i] - 1, 2)
+                else:
+                    RMSE += np.power(prediction[i], 2)
+            RMSE /= self.number_of_courses
+            RMSE = np.sqrt(RMSE)
+            RMSEs.append(RMSE)
+        result = np.sum(RMSEs)
+        result /= len(test_data)
+        return result
 
 
 class RandomRS:
     def __init__(self, courses):
         self.courses = courses
 
-    def predict(self):
+    def predict(self, data):
         return random.sample(self.courses, 5)
 
 
-#
 # class TestRandomRS:
 #     def test_usage(self):
 #         randomRS = RandomRS(None)
 #         assert False
-#
-#
+
+
 # class TestRandomSample:
 #     def test_usage(self):
 #         a = [1,2,3,4,5]
-#
-#         for i in range(100):
-#             b = random.sample(a, 3)
-#             print(b)
-#             assert len(b) == 3
-#             assert all(x in a for x in b)
-#
+
+# for i in range(100):
+#     b = random.sample(a, 3)
+#     print(b)
+#     assert len(b) == 3
+#     assert all(x in a for x in b)
+
 
 if __name__ == "__main__":
     main()
