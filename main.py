@@ -10,7 +10,9 @@ def main():
     all_data = load_all_data("ais2022.db", courses_dict)
     train_data, test_data = separate_data_into_test_and_train(all_data)
     model1 = RandomRS(courses_dict)
-    # print(model1.predict({}))
+    evaluator = Evaluator(len(courses_dict), test_data)
+    score = evaluator.evaluate(model1, test_data)
+    print(score)
 
 
 def load_all_data(database, courses_dict):
