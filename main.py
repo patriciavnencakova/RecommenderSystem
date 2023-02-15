@@ -91,7 +91,7 @@ class Evaluator:
         RMSEs = []
         for data in test_data:
             # chcem predikovat predmety, ktore som skutocne zapisal
-            reality = test_data[1]
+            reality = data[1]
             # na predikovanie posielam len predmety, ktore som mal zapisane
             prediction = trained_model.predict(data[0])
             RMSE = 0
@@ -108,6 +108,7 @@ class Evaluator:
         return result
 
 
+# treba zmenit
 class RandomRS:
     def __init__(self, courses):
         self.courses = courses
