@@ -6,20 +6,14 @@ import pandas as pd
 
 
 def main():
-    all_data = load_all_data("ais2022.db")
+    courses_dict = get_courses("ais2022.db")
+    all_data = load_all_data("ais2022.db", courses_dict)
     train_data, test_data = separate_data_into_test_and_train(all_data)
-    # for dato in test_data:
-    #     print(dato[0])
-    #     print(dato[1])
-    #     print(dato[2])
-    #     print()
-    courses, number_of_courses = get_courses("ais2022.db")
-    # print(number_of_courses)
-    model1 = RandomRS(courses)
-    # print(model1.predict())
+    model1 = RandomRS(courses_dict)
+    # print(model1.predict({}))
 
 
-def load_all_data(database):
+def load_all_data(database, courses_dict):
     con = sqlite3.connect(database)
     students = pd.read_sql_query("SELECT DISTINCT id "
                                  "FROM export", con)
@@ -42,7 +36,7 @@ def load_all_data(database):
         for index, row in years_per_student.iterrows():
             years_per_student_array.append(row['akrok'])
 
-        print("student", student)
+        # print("student", student)
         # x_courses = predmety, ktore som mal
         x_courses_array = []
         for year in years_per_student_array:
@@ -53,14 +47,14 @@ def load_all_data(database):
             # y_courses = predmety, ktore som zapisal
             y_courses_array = []
             for index, row in y_courses.iterrows():
-                y_courses_array.append(int(row['idpred']))
+                y_courses_array.append(courses_dict[int(row['idpred'])])
             all_data_item.append(x_courses_array.copy())
             all_data_item.append(y_courses_array)
             all_data_item.append(year)
-            print(all_data_item)
+            # print(all_data_item)
             all_data.append(all_data_item)
             x_courses_array.extend(y_courses_array)
-        print()
+        # print()
     con.close()
     return all_data
 
@@ -79,11 +73,12 @@ def separate_data_into_test_and_train(all_data):
 def get_courses(database):
     con = sqlite3.connect(database)
     courses = pd.read_sql_query("SELECT DISTINCT idpred "
-                                "FROM predmet", con)
-    courses_array = []
-    number_of_courses = len(courses)
+                                "FROM predmet "
+                                "ORDER BY idpred", con)
+    courses_dict = {}
     for index, row in courses.iterrows():
-        courses_array.append(int(row['idpred']))
+        # preindexovanie id predmetov
+        courses_dict[int(row['idpred'])] = index
     con.close()
     return courses_array
 
@@ -118,7 +113,10 @@ class RandomRS:
         self.courses = courses
 
     def predict(self, data):
-        return random.sample(self.courses, 5)
+        result = list()
+        for i in range(5):
+            result.append(random.randint(0, len(self.courses)))
+        return result
 
 
 # class TestRandomRS:
