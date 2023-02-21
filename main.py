@@ -7,7 +7,8 @@ import pandas as pd
 
 def main():
     courses_dict = get_courses("ais2022.db")
-    all_data = load_all_data("ais2022.db", courses_dict)
+    programs_dict = get_programs("ais2022.db")
+    all_data = load_all_data("ais2022.db", courses_dict, programs_dict)
     train_data, test_data = separate_data_into_test_and_train(all_data)
     model1 = RandomRS(courses_dict)
     evaluator = Evaluator(len(courses_dict), test_data)
@@ -15,7 +16,8 @@ def main():
     print(score)
 
 
-def load_all_data(database, courses_dict):
+def load_all_data(database, courses_dict, programs_dict):
+    # data vo forme [mal_som_zapisane, zapisal_som, v_roku, stud_prog]
     con = sqlite3.connect(database)
     students = pd.read_sql_query("SELECT DISTINCT id "
                                  "FROM export", con)
@@ -43,16 +45,19 @@ def load_all_data(database, courses_dict):
         x_courses_array = []
         for year in years_per_student_array:
             all_data_item = []
-            y_courses = pd.read_sql_query(f"SELECT idpred"
+            y_courses = pd.read_sql_query(f"SELECT idpred, skratkasp"
                                           f" FROM export"
                                           f" WHERE id = {student} AND akrok = '{year}'", con)
             # y_courses = predmety, ktore som zapisal
             y_courses_array = []
+            program = ''
             for index, row in y_courses.iterrows():
                 y_courses_array.append(courses_dict[int(row['idpred'])])
+                program = row['skratkasp']
             all_data_item.append(x_courses_array.copy())
             all_data_item.append(y_courses_array)
             all_data_item.append(year)
+            all_data_item.append(programs_dict[program])
             # print(all_data_item)
             all_data.append(all_data_item)
             x_courses_array.extend(y_courses_array)
@@ -83,6 +88,23 @@ def get_courses(database):
         courses_dict[int(row['idpred'])] = index
     con.close()
     return courses_dict
+
+
+def get_programs(database):
+    # zoberieme studijne programy, ktore nie su doktorandske
+    con = sqlite3.connect(database)
+    programs = pd.read_sql_query("SELECT skratkasp "
+                                 "FROM studprog ", con)
+    programs_dict = {}
+    counter = 0
+    for index, row in programs.iterrows():
+        program = row['skratkasp']
+        if program[0] != 'd':
+            programs_dict[program] = counter
+            counter = counter + 1
+    con.close()
+    return programs_dict
+
 
 class Evaluator:
     def __init__(self, number_of_courses, test_data):
