@@ -11,9 +11,10 @@ def main():
     all_data = load_all_data("ais2022.db", courses_dict, programs_dict)
     train_data, test_data = separate_data_into_test_and_train(all_data)
     model1 = RandomRS(courses_dict)
-    evaluator = Evaluator(len(courses_dict), test_data)
-    score = evaluator.evaluate(model1, test_data)
-    print(score)
+    evaluator = Evaluator(len(courses_dict), test_data, programs_dict)
+    total_score, score_per_program_dict = evaluator.evaluate(model1, test_data)
+    print(total_score)
+    print(score_per_program_dict)
 
 
 def load_all_data(database, courses_dict, programs_dict):
@@ -107,12 +108,16 @@ def get_programs(database):
 
 
 class Evaluator:
-    def __init__(self, number_of_courses, test_data):
+    def __init__(self, number_of_courses, test_data, programs_dict):
         self.number_of_courses = number_of_courses
         self.test_data = test_data
+        self.programs_dict = programs_dict
 
     def evaluate(self, trained_model, test_data):
         RMSEs = []
+        programs_RMSEs = []
+        for i in range(len(self.programs_dict)):
+            programs_RMSEs.append([])
         for data in test_data:
             # chcem predikovat predmety, ktore som skutocne zapisal
             reality = data[1]
@@ -127,9 +132,19 @@ class Evaluator:
             RMSE /= self.number_of_courses
             RMSE = np.sqrt(RMSE)
             RMSEs.append(RMSE)
-        result = np.sum(RMSEs)
-        result /= len(test_data)
-        return result
+            programs_RMSEs[data[3]].append(RMSE)
+        total_score = np.sum(RMSEs)
+        total_score /= len(test_data)
+        score_per_program_dict = {}
+        keys = [k for k, v in self.programs_dict.items()]
+        for i in range(len(programs_RMSEs)):
+            if len(programs_RMSEs[i]) == 0:
+                score_per_program_dict[keys[i]] = 0
+                continue
+            score = np.sum(programs_RMSEs[i])
+            score /= len(programs_RMSEs[i])
+            score_per_program_dict[keys[i]] = score
+        return total_score, score_per_program_dict
 
 
 class RandomRS:
