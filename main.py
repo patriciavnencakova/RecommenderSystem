@@ -6,17 +6,28 @@ import pandas as pd
 
 
 def main():
+    file1 = open("score_JaccardIndexRS.txt", "x")
+    file2 = open("score_RandomRS.txt", "x")
     courses_dict = get_courses("ais2022.db")
     programs_dict = get_programs("ais2022.db")
     # print(programs_dict)
     # print(courses_dict)
     all_data = load_all_data("ais2022.db", courses_dict, programs_dict)
     train_data, test_data = separate_data_into_test_and_train(all_data)
-    model = JaccardIndexRS(courses_dict, 1)
-    model.train(train_data)
-    # model1 = RandomRS(courses_dict)
     evaluator = Evaluator(len(courses_dict), programs_dict, test_data)
-    total_score, score_per_program_dict = evaluator.evaluate(model)
+
+    model1 = JaccardIndexRS(courses_dict, 1)
+    model1.train(train_data)
+    total_score, score_per_program_dict = evaluator.evaluate(model1)
+    file1.write(str(total_score))
+    file1.write(str(score_per_program_dict))
+    print(total_score)
+    print(score_per_program_dict)
+
+    model2 = RandomRS(courses_dict)
+    total_score, score_per_program_dict = evaluator.evaluate(model2)
+    file2.write(str(total_score))
+    file2.write(str(score_per_program_dict))
     print(total_score)
     print(score_per_program_dict)
 
@@ -33,13 +44,13 @@ def load_all_data(database, courses_dict, programs_dict):
 
     all_data = []
 
-    # for student in students_array:
+    for student in students_array:
     # len 200 studentov pre jednoduchost
     # counter = 0
     # for student in students_array:
     #     if counter == 3:
     #         break
-    for student in random.sample(students_array, 200):
+    # for student in random.sample(students_array, 200):
         years_per_student = pd.read_sql_query(f"SELECT DISTINCT akrok "
                                               f"FROM export "
                                               f"WHERE id = {student} "
@@ -148,7 +159,7 @@ class Evaluator:
         keys = [k for k, v in self.programs_dict.items()]
         for i in range(len(programs_RMSEs)):
             if len(programs_RMSEs[i]) == 0:
-                score_per_program_dict[keys[i]] = 0
+                score_per_program_dict[keys[i]] = None
                 continue
             score = np.sum(programs_RMSEs[i])
             score /= len(programs_RMSEs[i])
