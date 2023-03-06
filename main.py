@@ -8,11 +8,15 @@ import pandas as pd
 def main():
     courses_dict = get_courses("ais2022.db")
     programs_dict = get_programs("ais2022.db")
+    # print(programs_dict)
+    # print(courses_dict)
     all_data = load_all_data("ais2022.db", courses_dict, programs_dict)
-    train_data, test_data = separate_data_into_test_and_train(all_data)
-    model1 = RandomRS(courses_dict)
-    evaluator = Evaluator(len(courses_dict), test_data, programs_dict)
-    total_score, score_per_program_dict = evaluator.evaluate(model1, test_data)
+    # train_data, test_data = separate_data_into_test_and_train(all_data)
+    model = JaccardIndexRS(courses_dict, 1)
+    model.train(all_data)
+    # model1 = RandomRS(courses_dict)
+    evaluator = Evaluator(len(courses_dict), programs_dict, all_data)
+    total_score, score_per_program_dict = evaluator.evaluate(model)
     print(total_score)
     print(score_per_program_dict)
 
@@ -31,7 +35,11 @@ def load_all_data(database, courses_dict, programs_dict):
 
     # for student in students_array:
     # len 200 studentov pre jednoduchost
-    for student in random.sample(students_array, 20):
+    # counter = 0
+    # for student in students_array:
+    #     if counter == 3:
+    #         break
+    for student in random.sample(students_array, 200):
         years_per_student = pd.read_sql_query(f"SELECT DISTINCT akrok "
                                               f"FROM export "
                                               f"WHERE id = {student} "
@@ -62,6 +70,7 @@ def load_all_data(database, courses_dict, programs_dict):
             # print(all_data_item)
             all_data.append(all_data_item)
             x_courses_array.extend(y_courses_array)
+        # counter += 1
         # print()
     con.close()
     return all_data
@@ -108,21 +117,21 @@ def get_programs(database):
 
 
 class Evaluator:
-    def __init__(self, number_of_courses, test_data, programs_dict):
+    def __init__(self, number_of_courses, programs_dict, test_data):
         self.number_of_courses = number_of_courses
-        self.test_data = test_data
         self.programs_dict = programs_dict
+        self.test_data = test_data
 
-    def evaluate(self, trained_model, test_data):
+    def evaluate(self, trained_model):
         RMSEs = []
         programs_RMSEs = []
         for i in range(len(self.programs_dict)):
             programs_RMSEs.append([])
-        for data in test_data:
+        for data in self.test_data:
             # chcem predikovat predmety, ktore som skutocne zapisal
             reality = data[1]
-            # na predikovanie posielam len predmety, ktore som mal zapisane
-            prediction = trained_model.predict(data[0])
+            # na predikovanie posielam len predmety, ktore som mal zapisane -> pouzijeme data[0]
+            prediction = trained_model.predict(data)
             RMSE = 0
             for i in range(self.number_of_courses):
                 if i in reality:
@@ -134,7 +143,7 @@ class Evaluator:
             RMSEs.append(RMSE)
             programs_RMSEs[data[3]].append(RMSE)
         total_score = np.sum(RMSEs)
-        total_score /= len(test_data)
+        total_score /= len(self.test_data)
         score_per_program_dict = {}
         keys = [k for k, v in self.programs_dict.items()]
         for i in range(len(programs_RMSEs)):
@@ -155,6 +164,48 @@ class RandomRS:
         result = list()
         for i in range(len(self.courses)):
             result.append(random.uniform(0, 1))
+        return result
+
+
+class JaccardIndexRS:
+    def __init__(self, courses, n):
+        self.data = None
+        self.courses = courses
+        self.n = n
+
+    def train(self, train_data):
+        self.data = train_data
+
+    def predict(self, data):
+        # vrati zoznam pravdepodobnosti, zapisania predmetov
+        s1 = set(data[0])
+        tuples = list()
+        for dato in self.data:
+            s2 = set(dato[0])
+            jaccard_index = 0
+            if len(s1) == 0 and len(s2) == 0:
+                if data[3] == dato[3]:
+                    jaccard_index = 1.0
+            else:
+                jaccard_index = len(s1.intersection(s2)) / len(s1.union(s2))
+            # tuple vo formate (podobnost, predemty_na_zapisanie)
+            our_tuple = (jaccard_index, dato[1])
+            tuples.append(our_tuple)
+        tuples.sort(reverse=True)
+        # print(tuples)
+        top_n = tuples[:self.n]
+        # print(top_n)
+        result = list()
+        for i in range(len(self.courses)):
+            counter = 0
+            for dato in top_n:
+                if i in dato[1]:
+                    counter += 1
+            result.append(counter / self.n)
+
+        # for i in range(len(result)):
+        #     if result[i] != 0:
+        #         print(f"{i}: {result[i]}")
         return result
 
 
