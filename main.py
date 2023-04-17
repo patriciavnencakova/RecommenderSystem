@@ -6,30 +6,84 @@ import pandas as pd
 
 
 def main():
-    file1 = open("score_JaccardIndexRS.txt", "x")
-    file2 = open("score_RandomRS.txt", "x")
-    courses_dict = get_courses("ais2022.db")
+    # file1 = open("score_JaccardIndexRS_n1.txt", "x")
+    # file2 = open("score_JaccardIndexRS_n10.txt", "x")
+    # file3 = open("score_JaccardIndexRS_n20.txt", "x")
+    # file4 = open("score_JaccardIndexRS_n100.txt", "x")
+    # file5 = open("score_RandomRS.txt", "x")
+    courses_dict, courses_dict_names = get_courses("ais2022.db")
+    # print(courses_dict)
+    # print(courses_dict_names)
     programs_dict = get_programs("ais2022.db")
     # print(programs_dict)
-    # print(courses_dict)
     all_data = load_all_data("ais2022.db", courses_dict, programs_dict)
-    train_data, test_data = separate_data_into_test_and_train(all_data)
-    evaluator = Evaluator(len(courses_dict), programs_dict, test_data)
+    # 13 roznych akademickych rokov
+    train_data, test_data = separate_data_into_test_and_train("ais2022.db", all_data, 2)
+    # evaluator = Evaluator(len(courses_dict), programs_dict, test_data)
 
-    model1 = JaccardIndexRS(courses_dict, 1)
-    model1.train(train_data)
-    total_score, score_per_program_dict = evaluator.evaluate(model1)
-    file1.write(str(total_score))
-    file1.write(str(score_per_program_dict))
-    print(total_score)
-    print(score_per_program_dict)
+    JI = JaccardIndexRS(courses_dict, 10)
+    JI.train(train_data)
+    my_data = [[1796, 1580, 1886, 4276, 1945, 175, 1746, 1536, 3502, 3463, 1312, 1884, 1887, 8, 4428, 183, 1747, 1543],
+               [], '2020/21', 'INF']
+    JI.predict(my_data)
 
-    model2 = RandomRS(courses_dict)
-    total_score, score_per_program_dict = evaluator.evaluate(model2)
-    file2.write(str(total_score))
-    file2.write(str(score_per_program_dict))
-    print(total_score)
-    print(score_per_program_dict)
+    # JIn1 = JaccardIndexRS(courses_dict, 1)
+    # JIn1.train(train_data)
+    # total_score, score_per_program_dict = evaluator.evaluate(JIn1)
+    # file1.write(str(total_score))
+    # file2.write(str(score_per_program_dict))
+    # file1.write("{\n")
+    # for k in score_per_program_dict.keys():
+    #     file1.write(F"'{k}': '{score_per_program_dict[k]}',\n")  # add comma at end of line
+    # file1.write("}")
+    # print(total_score)
+    # print(score_per_program_dict)
+
+    # JIn10 = JaccardIndexRS(courses_dict, 10)
+    # JIn10.train(train_data)
+    # total_score, score_per_program_dict = evaluator.evaluate(JIn10)
+    # file2.write(str(total_score))
+    # file2.write(str(score_per_program_dict))
+    # file2.write("{\n")
+    # for k in score_per_program_dict.keys():
+    #     file2.write(F"'{k}': '{score_per_program_dict[k]}',\n")  # add comma at end of line
+    # file2.write("}")
+    # print(total_score)
+    # print(score_per_program_dict)
+
+    # JIn20 = JaccardIndexRS(courses_dict, 20)
+    # JIn20.train(train_data)
+    # total_score, score_per_program_dict = evaluator.evaluate(JIn20)
+    # file3.write(str(total_score))
+    # file3.write("{\n")
+    # for k in score_per_program_dict.keys():
+    #     file3.write(F"'{k}': '{score_per_program_dict[k]}',\n")  # add comma at end of line
+    # file3.write("}")
+    # print(total_score)
+    # print(score_per_program_dict)
+    #
+    # JIn100 = JaccardIndexRS(courses_dict, 100)
+    # JIn100.train(train_data)
+    # total_score, score_per_program_dict = evaluator.evaluate(JIn100)
+    # file4.write(str(total_score))
+    # # file3.write(str(score_per_program_dict))
+    # file4.write("{\n")
+    # for k in score_per_program_dict.keys():
+    #     file4.write(F"'{k}': '{score_per_program_dict[k]}',\n")  # add comma at end of line
+    # file4.write("}")
+    # print(total_score)
+    # print(score_per_program_dict)
+
+    # rand = RandomRS(courses_dict)
+    # total_score, score_per_program_dict = evaluator.evaluate(rand)
+    # file5.write(str(total_score))
+    # file5.write(str(score_per_program_dict))
+    # file5.write("{\n")
+    # for k in score_per_program_dict.keys():
+    #     file5.write(F"'{k}': '{score_per_program_dict[k]}',\n")  # add comma at end of line
+    # file5.write("}")
+    # print(total_score)
+    # print(score_per_program_dict)
 
 
 def load_all_data(database, courses_dict, programs_dict):
@@ -87,11 +141,20 @@ def load_all_data(database, courses_dict, programs_dict):
     return all_data
 
 
-def separate_data_into_test_and_train(all_data):
+def separate_data_into_test_and_train(database, all_data, number_of_tested_years):
+    con = sqlite3.connect(database)
+    years = pd.read_sql_query("SELECT DISTINCT akrok FROM export ORDER BY akrok DESC", con)
+    years.reset_index()
+    years_array = []
+    for index, row in years.iterrows():
+        years_array.append(row['akrok'])
     train_data = []
     test_data = []
+    # print(years_array[:number_of_tested_years])
     for dato in all_data:
-        if dato[2] == '2021/22':
+        # if dato[2] == '2021/22':
+        # zoberieme poslednych number_of_tested_years rokov za testovacie
+        if dato[2] in years_array[:number_of_tested_years]:
             test_data.append(dato)
         else:
             train_data.append(dato)
@@ -99,16 +162,19 @@ def separate_data_into_test_and_train(all_data):
 
 
 def get_courses(database):
+    # zoberieme predmety, ktore nie su doktorandske
     con = sqlite3.connect(database)
-    courses = pd.read_sql_query("SELECT DISTINCT idpred "
+    courses = pd.read_sql_query("SELECT DISTINCT idpred, kodpred "
                                 "FROM predmet "
                                 "ORDER BY idpred", con)
     courses_dict = {}
+    courses_dict_names = {}
     for index, row in courses.iterrows():
         # preindexovanie id predmetov
         courses_dict[int(row['idpred'])] = index
+        courses_dict_names[row['kodpred']] = index
     con.close()
-    return courses_dict
+    return courses_dict, courses_dict_names
 
 
 def get_programs(database):
