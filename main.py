@@ -6,11 +6,11 @@ import pandas as pd
 
 
 def main():
-    # file1 = open("score_JaccardIndexRS_n1.txt", "x")
-    # file2 = open("score_JaccardIndexRS_n10.txt", "x")
-    # file3 = open("score_JaccardIndexRS_n20.txt", "x")
+    file1 = open("score_JaccardIndexRS_n1.txt", "x")
+    file2 = open("score_JaccardIndexRS_n10.txt", "x")
+    file3 = open("score_JaccardIndexRS_n20.txt", "x")
     # file4 = open("score_JaccardIndexRS_n100.txt", "x")
-    # file5 = open("score_RandomRS.txt", "x")
+    file5 = open("score_RandomRS.txt", "x")
     courses_dict, courses_dict_names = get_courses("ais2022.db")
     # print(courses_dict)
     # print(courses_dict_names)
@@ -18,55 +18,54 @@ def main():
     # print(programs_dict)
     all_data = load_all_data("ais2022.db", courses_dict, programs_dict)
     # 13 roznych akademickych rokov
-    train_data, test_data = separate_data_into_test_and_train("ais2022.db", all_data, 2)
-    # evaluator = Evaluator(len(courses_dict), programs_dict, test_data)
+    train_data, test_data = separate_data_into_test_and_train("ais2022.db", all_data, 7)
+    evaluator = Evaluator(len(courses_dict), programs_dict, test_data)
 
-    JI = JaccardIndexRS(courses_dict, 10)
-    JI.train(train_data)
-    my_data = [[1796, 1580, 1886, 4276, 1945, 175, 1746, 1536, 3502, 3463, 1312, 1884, 1887, 8, 4428, 183, 1747, 1543],
-               [], '2020/21', 'INF']
-    JI.predict(my_data)
+    # JI = JaccardIndexRS(courses_dict, 10)
+    # JI.train(train_data)
+    # my_data = [[1796, 1580, 1886, 4276, 1945, 175, 1746, 1536, 3502, 3463, 1312, 1884, 1887, 8, 4428, 183, 1747, 1543],
+    #            [], '2020/21', 'INF']
+    # JI.predict(my_data)
 
-    # JIn1 = JaccardIndexRS(courses_dict, 1)
-    # JIn1.train(train_data)
-    # total_score, score_per_program_dict = evaluator.evaluate(JIn1)
-    # file1.write(str(total_score))
+    RS1 = JaccardIndexRS(courses_dict, 1)
+    RS1.train(train_data)
+    total_score, score_per_program_dict = evaluator.evaluate(RS1)
+    file1.write(str(total_score))
+    # file1.write(str(score_per_program_dict))
+    file1.write("{\n")
+    for k in score_per_program_dict.keys():
+        file1.write(F"'{k}': '{score_per_program_dict[k]}',\n")  # add comma at end of line
+    file1.write("}")
+    print(total_score)
+    print(score_per_program_dict)
+
+    RS2 = JaccardIndexRS(courses_dict, 10)
+    RS2.train(train_data)
+    total_score, score_per_program_dict = evaluator.evaluate(RS2)
+    file2.write(str(total_score))
     # file2.write(str(score_per_program_dict))
-    # file1.write("{\n")
-    # for k in score_per_program_dict.keys():
-    #     file1.write(F"'{k}': '{score_per_program_dict[k]}',\n")  # add comma at end of line
-    # file1.write("}")
-    # print(total_score)
-    # print(score_per_program_dict)
+    file2.write("{\n")
+    for k in score_per_program_dict.keys():
+        file2.write(F"'{k}': '{score_per_program_dict[k]}',\n")  # add comma at end of line
+    file2.write("}")
+    print(total_score)
+    print(score_per_program_dict)
 
-    # JIn10 = JaccardIndexRS(courses_dict, 10)
-    # JIn10.train(train_data)
-    # total_score, score_per_program_dict = evaluator.evaluate(JIn10)
-    # file2.write(str(total_score))
-    # file2.write(str(score_per_program_dict))
-    # file2.write("{\n")
-    # for k in score_per_program_dict.keys():
-    #     file2.write(F"'{k}': '{score_per_program_dict[k]}',\n")  # add comma at end of line
-    # file2.write("}")
-    # print(total_score)
-    # print(score_per_program_dict)
+    RS3 = JaccardIndexRS(courses_dict, 20)
+    RS3.train(train_data)
+    total_score, score_per_program_dict = evaluator.evaluate(RS3)
+    file3.write(str(total_score))
+    file3.write("{\n")
+    for k in score_per_program_dict.keys():
+        file3.write(F"'{k}': '{score_per_program_dict[k]}',\n")  # add comma at end of line
+    file3.write("}")
+    print(total_score)
+    print(score_per_program_dict)
 
-    # JIn20 = JaccardIndexRS(courses_dict, 20)
-    # JIn20.train(train_data)
-    # total_score, score_per_program_dict = evaluator.evaluate(JIn20)
-    # file3.write(str(total_score))
-    # file3.write("{\n")
-    # for k in score_per_program_dict.keys():
-    #     file3.write(F"'{k}': '{score_per_program_dict[k]}',\n")  # add comma at end of line
-    # file3.write("}")
-    # print(total_score)
-    # print(score_per_program_dict)
-    #
-    # JIn100 = JaccardIndexRS(courses_dict, 100)
-    # JIn100.train(train_data)
-    # total_score, score_per_program_dict = evaluator.evaluate(JIn100)
+    # RS4 = JaccardIndexRS(courses_dict, 100)
+    # RS4.train(train_data)
+    # total_score, score_per_program_dict = evaluator.evaluate(RS4)
     # file4.write(str(total_score))
-    # # file3.write(str(score_per_program_dict))
     # file4.write("{\n")
     # for k in score_per_program_dict.keys():
     #     file4.write(F"'{k}': '{score_per_program_dict[k]}',\n")  # add comma at end of line
@@ -74,16 +73,15 @@ def main():
     # print(total_score)
     # print(score_per_program_dict)
 
-    # rand = RandomRS(courses_dict)
-    # total_score, score_per_program_dict = evaluator.evaluate(rand)
-    # file5.write(str(total_score))
-    # file5.write(str(score_per_program_dict))
-    # file5.write("{\n")
-    # for k in score_per_program_dict.keys():
-    #     file5.write(F"'{k}': '{score_per_program_dict[k]}',\n")  # add comma at end of line
-    # file5.write("}")
-    # print(total_score)
-    # print(score_per_program_dict)
+    RS5 = RandomRS(courses_dict)
+    total_score, score_per_program_dict = evaluator.evaluate(RS5)
+    file5.write(str(total_score))
+    file5.write("{\n")
+    for k in score_per_program_dict.keys():
+        file5.write(F"'{k}': '{score_per_program_dict[k]}',\n")  # add comma at end of line
+    file5.write("}")
+    print(total_score)
+    print(score_per_program_dict)
 
 
 def load_all_data(database, courses_dict, programs_dict):
@@ -99,12 +97,12 @@ def load_all_data(database, courses_dict, programs_dict):
     all_data = []
 
     for student in students_array:
-    # len 200 studentov pre jednoduchost
-    # counter = 0
-    # for student in students_array:
-    #     if counter == 3:
-    #         break
-    # for student in random.sample(students_array, 200):
+        # len 200 studentov pre jednoduchost
+        # counter = 0
+        # for student in students_array:
+        #     if counter == 3:
+        #         break
+        # for student in random.sample(students_array, 200):
         years_per_student = pd.read_sql_query(f"SELECT DISTINCT akrok "
                                               f"FROM export "
                                               f"WHERE id = {student} "
@@ -269,6 +267,49 @@ class JaccardIndexRS:
             our_tuple = (jaccard_index, dato[1])
             tuples.append(our_tuple)
         tuples.sort(reverse=True)
+        # print(tuples)
+        top_n = tuples[:self.n]
+        # print(top_n)
+        result = list()
+        for i in range(len(self.courses)):
+            counter = 0
+            for dato in top_n:
+                if i in dato[1]:
+                    counter += 1
+            result.append(counter / self.n)
+
+        # for i in range(len(result)):
+        #     if result[i] != 0:
+        #         print(f"{i}: {result[i]}")
+        return result
+
+
+# hamming distance = pocet rozdielnych => cim menej rozdielnych, tym lepsie
+class HammingDistanceRS:
+    def __init__(self, courses, n):
+        self.data = None
+        self.courses = courses
+        self.n = n
+
+    def train(self, train_data):
+        self.data = train_data
+
+    def predict(self, data):
+        # vrati zoznam pravdepodobnosti, zapisania predmetov
+        s1 = set(data[0])
+        tuples = list()
+        for dato in self.data:
+            s2 = set(dato[0])
+            hamming_distance = 0
+            if len(s1) == 0 and len(s2) == 0:
+                if data[3] == dato[3]:
+                    hamming_distance = 0
+            else:
+                hamming_distance = len(s1) + len(s2) - 2 * len(s1.intersection(s2))
+            # tuple vo formate (pocet_rozdielnych, predemty_na_zapisanie)
+            our_tuple = (hamming_distance, dato[1])
+            tuples.append(our_tuple)
+        tuples.sort()
         # print(tuples)
         top_n = tuples[:self.n]
         # print(top_n)
