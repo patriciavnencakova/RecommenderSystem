@@ -7,23 +7,32 @@ import sys as s
 
 
 def main():
-    file1 = open("score_JaccardIndexRS_n1.txt", "x")
-    file2 = open("score_JaccardIndexRS_n10.txt", "x")
-    file3 = open("score_JaccardIndexRS_n20.txt", "x")
-    file4 = open("score_JaccardIndexRS_n100.txt", "x")
-    file5 = open("score_RandomRS.txt", "x")
+    # file1 = open("score_JaccardIndexRS_n1.txt", "x")
+    # file2 = open("score_JaccardIndexRS_n10.txt", "x")
+    # file3 = open("score_JaccardIndexRS_n20.txt", "x")
+    # file4 = open("score_JaccardIndexRS_n100.txt", "x")
+    # file5 = open("score_RandomRS.txt", "x")
     courses_dict, courses_dict_names, doctoral_courses = get_courses("ais2022.db")
+    same_courses = merge_same_courses("ais2022.db", courses_dict)
+
     # print(doctoral_courses)
     # print(courses_dict)
     # print(courses_dict_names)
-    programs_dict = get_programs("ais2022.db")
-    # old_courses = get_old_courses("ais2022.db")
+    # programs_dict = get_programs("ais2022.db")
+    # old_courses = get_old_courses("ais2022.db", courses_dict)
+    # print(old_courses)
     # print(old_courses)
     # print(programs_dict)
-    all_data = load_all_data("ais2022.db", courses_dict, programs_dict)
+
+
+
+
+
+
+    # all_data = load_all_data("ais2022.db", courses_dict, programs_dict)
     # 13 roznych akademickych rokov
-    train_data, test_data = separate_data_into_test_and_train("ais2022.db", all_data, 1)
-    evaluator = Evaluator(len(courses_dict), len(doctoral_courses), programs_dict, test_data)
+    # train_data, test_data = separate_data_into_test_and_train("ais2022.db", all_data, 3)
+    # evaluator = Evaluator(len(courses_dict), len(doctoral_courses), programs_dict, test_data)
 
     # JI = JaccardIndexRS(courses_dict, 10)
     # JI.train(train_data)
@@ -31,59 +40,59 @@ def main():
     #            [], '2020/21', 'INF']
     # JI.predict(my_data)
 
-    RS1 = JaccardIndexRS(courses_dict, doctoral_courses, 1)
-    RS1.train(train_data)
-    total_score, score_per_program_dict = evaluator.evaluate(RS1)
-    file1.write(str(total_score))
-    file1.write("{\n")
-    for k in score_per_program_dict.keys():
-        file1.write(F"'{k}': '{score_per_program_dict[k]}',\n")  # add comma at end of line
-    file1.write("}")
-    print(total_score)
-    print(score_per_program_dict)
-
-    RS2 = JaccardIndexRS(courses_dict, doctoral_courses, 10)
-    RS2.train(train_data)
-    total_score, score_per_program_dict = evaluator.evaluate(RS2)
-    file2.write(str(total_score))
-    file2.write("{\n")
-    for k in score_per_program_dict.keys():
-        file2.write(F"'{k}': '{score_per_program_dict[k]}',\n")  # add comma at end of line
-    file2.write("}")
-    print(total_score)
-    print(score_per_program_dict)
-
-    RS3 = JaccardIndexRS(courses_dict, doctoral_courses, 20)
-    RS3.train(train_data)
-    total_score, score_per_program_dict = evaluator.evaluate(RS3)
-    file3.write(str(total_score))
-    file3.write("{\n")
-    for k in score_per_program_dict.keys():
-        file3.write(F"'{k}': '{score_per_program_dict[k]}',\n")  # add comma at end of line
-    file3.write("}")
-    print(total_score)
-    print(score_per_program_dict)
-
-    RS4 = JaccardIndexRS(courses_dict, doctoral_courses, 100)
-    RS4.train(train_data)
-    total_score, score_per_program_dict = evaluator.evaluate(RS4)
-    file4.write(str(total_score))
-    file4.write("{\n")
-    for k in score_per_program_dict.keys():
-        file4.write(F"'{k}': '{score_per_program_dict[k]}',\n")  # add comma at end of line
-    file4.write("}")
-    print(total_score)
-    print(score_per_program_dict)
-
-    RS5 = RandomRS(courses_dict)
-    total_score, score_per_program_dict = evaluator.evaluate(RS5)
-    file5.write(str(total_score))
-    file5.write("{\n")
-    for k in score_per_program_dict.keys():
-        file5.write(F"'{k}': '{score_per_program_dict[k]}',\n")  # add comma at end of line
-    file5.write("}")
-    print(total_score)
-    print(score_per_program_dict)
+    # RS1 = JaccardIndexRS(courses_dict, doctoral_courses, 1)
+    # RS1.train(train_data)
+    # total_score, score_per_program_dict = evaluator.evaluate(RS1)
+    # file1.write(str(total_score))
+    # file1.write("{\n")
+    # for k in score_per_program_dict.keys():
+    #     file1.write(F"'{k}': '{score_per_program_dict[k]}',\n")  # add comma at end of line
+    # file1.write("}")
+    # print(total_score)
+    # print(score_per_program_dict)
+    #
+    # RS2 = JaccardIndexRS(courses_dict, doctoral_courses, 10)
+    # RS2.train(train_data)
+    # total_score, score_per_program_dict = evaluator.evaluate(RS2)
+    # file2.write(str(total_score))
+    # file2.write("{\n")
+    # for k in score_per_program_dict.keys():
+    #     file2.write(F"'{k}': '{score_per_program_dict[k]}',\n")  # add comma at end of line
+    # file2.write("}")
+    # print(total_score)
+    # print(score_per_program_dict)
+    #
+    # RS3 = JaccardIndexRS(courses_dict, doctoral_courses, 20)
+    # RS3.train(train_data)
+    # total_score, score_per_program_dict = evaluator.evaluate(RS3)
+    # file3.write(str(total_score))
+    # file3.write("{\n")
+    # for k in score_per_program_dict.keys():
+    #     file3.write(F"'{k}': '{score_per_program_dict[k]}',\n")  # add comma at end of line
+    # file3.write("}")
+    # print(total_score)
+    # print(score_per_program_dict)
+    #
+    # RS4 = JaccardIndexRS(courses_dict, doctoral_courses, 100)
+    # RS4.train(train_data)
+    # total_score, score_per_program_dict = evaluator.evaluate(RS4)
+    # file4.write(str(total_score))
+    # file4.write("{\n")
+    # for k in score_per_program_dict.keys():
+    #     file4.write(F"'{k}': '{score_per_program_dict[k]}',\n")  # add comma at end of line
+    # file4.write("}")
+    # print(total_score)
+    # print(score_per_program_dict)
+    #
+    # RS5 = RandomRS(courses_dict, doctoral_courses)
+    # total_score, score_per_program_dict = evaluator.evaluate(RS5)
+    # file5.write(str(total_score))
+    # file5.write("{\n")
+    # for k in score_per_program_dict.keys():
+    #     file5.write(F"'{k}': '{score_per_program_dict[k]}',\n")  # add comma at end of line
+    # file5.write("}")
+    # print(total_score)
+    # print(score_per_program_dict)
 
 
 def load_all_data(database, courses_dict, programs_dict):
@@ -173,7 +182,7 @@ def get_courses(database):
     for index, row in courses.iterrows():
         # preindexovanie id predmetov
         courses_dict[int(row['idpred'])] = index
-        courses_dict_names[row['kodpred']] = index
+        courses_dict_names[int(row['idpred'])] = row['kodpred']
         course = row['skratkapred']
         if course.startswith('3-'):
             # print(course)
@@ -198,7 +207,8 @@ def get_programs(database):
     return programs_dict
 
 
-def get_old_courses(database):
+# mam povodne id
+def get_old_courses(database, courses_dict):
     con = sqlite3.connect(database)
     old_courses = pd.read_sql_query("SELECT DISTINCT idpred "
                                     "FROM export "
@@ -209,8 +219,45 @@ def get_old_courses(database):
     old_courses.reset_index()
     old_courses_array = []
     for index, row in old_courses.iterrows():
-        old_courses_array.append(int(row['idpred']))
+        old_courses_array.append(courses_dict[int(row['idpred'])])
     return old_courses_array
+
+
+def merge_same_courses(database, courses_dict):
+    con = sqlite3.connect(database)
+    courses = pd.read_sql_query("SELECT * "
+                                "FROM predmet "
+                                "WHERE skratkapred IN ( "
+                                "SELECT skratkapred "
+                                "FROM predmet "
+                                "GROUP BY skratkapred "
+                                "HAVING COUNT(*) > 1) "
+                                "ORDER BY skratkapred;", con)
+    duplicate_courses_dict = {}
+    for index, row in courses.iterrows():
+        # ak je rovnaka skratka a zaroven nazov, tak ich zlucim
+        key = f"{row['skratkapred']}_{row['nazovpred']}"
+        parts = row['kodpred'].split("/")
+        # course = courses_dict[int(row['idpred'])]
+        if key in duplicate_courses_dict:
+            value = duplicate_courses_dict[key]
+            # najaktualnejsia verzia je ta, ktora ma najvacsie cislo v kode predmetu
+            if value['max_value'] < int(parts[2]):
+                value['max_value'] = int(parts[2])
+                value['max_id'] = courses_dict[int(row['idpred'])]
+            value['courses'].append(int(row['idpred']))
+        else:
+            value = {
+                'max_value': int(parts[2]),
+                'max_id': courses_dict[int(row['idpred'])],
+                'courses': [int(row['idpred'])]
+            }
+            duplicate_courses_dict[key] = value
+
+    for key, value in duplicate_courses_dict.items():
+        for course in value['courses']:
+            courses_dict[course] = value['max_id']
+    return duplicate_courses_dict
 
 
 class Evaluator:
@@ -236,7 +283,7 @@ class Evaluator:
                     RMSE += np.power(prediction[i] - 1, 2)
                 else:
                     RMSE += np.power(prediction[i], 2)
-            RMSE /= self.number_of_doctoral_courses
+            RMSE /= (self.number_of_courses - self.number_of_doctoral_courses)
             RMSE = np.sqrt(RMSE)
             RMSEs.append(RMSE)
             programs_RMSEs[data[3]].append(RMSE)
@@ -407,23 +454,6 @@ class IntersectionRS:
         #     if result[i] != 0:
         #         print(f"{i}: {result[i]}")
         return result
-
-
-# class TestRandomRS:
-#     def test_usage(self):
-#         randomRS = RandomRS(None)
-#         assert False
-
-
-# class TestRandomSample:
-#     def test_usage(self):
-#         a = [1,2,3,4,5]
-
-# for i in range(100):
-#     b = random.sample(a, 3)
-#     print(b)
-#     assert len(b) == 3
-#     assert all(x in a for x in b)
 
 
 if __name__ == "__main__":
