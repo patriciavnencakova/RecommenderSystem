@@ -10,34 +10,34 @@ from all_data import ALL_DATA
 
 
 def main():
-    file1 = open("score_JaccardIndexRS_09,10_21.txt", "w")
-    file2 = open("score_HammingDistanceRS_09,10_21.txt", "w")
-    file3 = open("score_IntersectionRS_09,10_21.txt", "w")
+    file1 = open("RMSE_JaccardIndex_subsample_0.8.txt", "w")
+    file2 = open("F1_JaccardIndex_subsample_0.8.txt", "w")
+    file3 = open("RMSE_HammingDistance_subsample_0.8.txt", "w")
+    file4 = open("F1_HammingDistance_subsample_0.8.txt", "w")
+    file5 = open("RMSE_Intersection_subsample_0.8.txt", "w")
+    file6 = open("F1_Intersection_subsample_0.8.txt", "w")
 
     programs_dict, fields_division = get_programs("ais2022.db")
-    print(len(programs_dict))
-    # print(programs_dict)
-    # print(len(fields_division))
-    # print(fields_division)
+    # print('pocet studijnych programov: ', len(programs_dict))
+
     courses_dict, courses_dict_names = get_courses("ais2022.db")
-    print('pocet predmetov pred zlucenim:', len(courses_dict))
+    # print('pocet predmetov pred zlucenim:', len(courses_dict))
     same_courses = merge_same_courses("ais2022.db", courses_dict)
-    print('pocet predmetov po zluceni:', len(same_courses))
+    # print('pocet predmetov po zluceni:', len(same_courses))
 
     doctoral_courses = get_doctoral_courses("ais2022.db", courses_dict)
-    print('doktorandske predmety:', len(doctoral_courses))
-    # print(redundant_courses)
+    # print('doktorandske predmety:', len(doctoral_courses))
 
+    no_enrollment_courses = get_courses_with_no_enrollment("ais2022.db", courses_dict)
     only_one_enrollment_courses = get_courses_with_only_one_enrollment("ais2022.db", courses_dict)
-    print('predmety, ktore boli zapisane len jedenkrat:', len(only_one_enrollment_courses))
-    # print(only_one_enrollment_courses)
+    # print('predmety, ktore boli zapisane menej ako dvakrat:',
+    #       len(only_one_enrollment_courses.union(no_enrollment_courses)))
 
-    redundant_courses = doctoral_courses.union(only_one_enrollment_courses)
-    print('celkovo predmety, ktore nezapocitavame:', len(redundant_courses))
-    # print(redundant_courses)
+    redundant_courses = doctoral_courses.union(only_one_enrollment_courses).union(no_enrollment_courses)
+    # print('celkovo predmety, ktore nezapocitavame:', len(redundant_courses))
 
     RMSE_courses = len(same_courses) - len(redundant_courses)
-    print('predmety, ktore idu do RMSE:', RMSE_courses)
+    # print('predmety, ktore idu do RMSE:', RMSE_courses)
 
     all_data = ALL_DATA
     # print(len(ALL_DATA))
@@ -46,8 +46,11 @@ def main():
     # print(all_data)
 
     # 13 roznych akademickych rokov
-    train_years = ['2009/10', '2010/11']
-    test_years = ['2021/22']
+    train_years = ['2015/16', '2016/17', '2017/18', '2018/19', '2019/20']
+    test_years = ['2020/21', '2021/22']
+    percentage = 0.8
+    all_data = random.sample(all_data, int(len(all_data)*percentage))
+
     train_data, test_data = separate_data_into_test_and_train("ais2022.db", all_data, train_years, test_years)
     evaluator = Evaluator(len(courses_dict), RMSE_courses, fields_division, test_data)
 
@@ -59,36 +62,60 @@ def main():
 
     RS1 = JaccardIndexRS(courses_dict, redundant_courses, 15)
     RS1.train(train_data)
-    total_score, score_per_program_dict = evaluator.evaluate(RS1)
-    file1.write(str(total_score))
+    total_score_RMSE, score_per_program_RMSE, total_score_F1, score_per_program_F1 = evaluator.evaluate(RS1)
+    file1.write(str(total_score_RMSE))
     file1.write("{\n")
-    for k in score_per_program_dict.keys():
-        file1.write(F"'{k}': '{score_per_program_dict[k]}',\n")  # add comma at end of line
+    for k in score_per_program_RMSE.keys():
+        file1.write(F"'{k}': '{score_per_program_RMSE[k]}',\n")  # add comma at end of line
     file1.write("}")
-    print(total_score)
-    print(score_per_program_dict)
+    print(total_score_RMSE)
+    print(score_per_program_RMSE)
+
+    file2.write(str(total_score_F1))
+    file2.write("{\n")
+    for k in score_per_program_F1.keys():
+        file2.write(F"'{k}': '{score_per_program_F1[k]}',\n")  # add comma at end of line
+    file2.write("}")
+    print(total_score_F1)
+    print(score_per_program_F1)
 
     RS2 = HammingDistanceRS(courses_dict, redundant_courses, 15)
     RS2.train(train_data)
-    total_score, score_per_program_dict = evaluator.evaluate(RS2)
-    file2.write(str(total_score))
-    file2.write("{\n")
-    for k in score_per_program_dict.keys():
-        file2.write(F"'{k}': '{score_per_program_dict[k]}',\n")  # add comma at end of line
-    file2.write("}")
-    print(total_score)
-    print(score_per_program_dict)
+    total_score_RMSE, score_per_program_RMSE, total_score_F1, score_per_program_F1 = evaluator.evaluate(RS2)
+    file3.write(str(total_score_RMSE))
+    file3.write("{\n")
+    for k in score_per_program_RMSE.keys():
+        file3.write(F"'{k}': '{score_per_program_RMSE[k]}',\n")  # add comma at end of line
+    file3.write("}")
+    print(total_score_RMSE)
+    print(score_per_program_RMSE)
+
+    file4.write(str(total_score_F1))
+    file4.write("{\n")
+    for k in score_per_program_F1.keys():
+        file4.write(F"'{k}': '{score_per_program_F1[k]}',\n")  # add comma at end of line
+    file4.write("}")
+    print(total_score_F1)
+    print(score_per_program_F1)
 
     RS3 = IntersectionRS(courses_dict, redundant_courses, 15)
     RS3.train(train_data)
-    total_score, score_per_program_dict = evaluator.evaluate(RS3)
-    file3.write(str(total_score))
-    file3.write("{\n")
-    for k in score_per_program_dict.keys():
-        file3.write(F"'{k}': '{score_per_program_dict[k]}',\n")  # add comma at end of line
-    file3.write("}")
-    print(total_score)
-    print(score_per_program_dict)
+    total_score_RMSE, score_per_program_RMSE, total_score_F1, score_per_program_F1 = evaluator.evaluate(RS3)
+    file5.write(str(total_score_RMSE))
+    file5.write("{\n")
+    for k in score_per_program_RMSE.keys():
+        file5.write(F"'{k}': '{score_per_program_RMSE[k]}',\n")  # add comma at end of line
+    file5.write("}")
+    print(total_score_RMSE)
+    print(score_per_program_RMSE)
+
+    file6.write(str(total_score_F1))
+    file6.write("{\n")
+    for k in score_per_program_F1.keys():
+        file6.write(F"'{k}': '{score_per_program_F1[k]}',\n")  # add comma at end of line
+    file6.write("}")
+    print(total_score_F1)
+    print(score_per_program_F1)
 
 
 def load_all_data(database: str, courses: dict, programs: dict) -> list:
@@ -215,8 +242,8 @@ def get_programs(database: str) -> Tuple[dict, dict]:
                        'mFJF': 7, 'muMADG': 8, 'upMADG': 4, 'mIKVa': 6, 'muMATV': 8, 'upMATV': 4, 'mINF/k': 6,
                        'mFAA': 7, 'muMAIN/k': 8, 'FYZ/k': 3, 'mAINa': 6, 'mFOS': 7, 'mFPE': 7, 'mFMK': 7, 'mINFa': 6,
                        'mFOZ': 7, 'muMADG/k': 8, 'TEF': 3, 'DAV/k': 2, 'mFTFa': 7, 'muFYIN': 8, 'upFYIN': 4,
-                       'upINBI': 8, 'mMATa': 5, 'AINa': 2, 'BIN/k': 2, 'mINFa/k': 6, 'OZE/k': 3, 'mMPGa': 5, 'mEOMa': 7,
-                       'TEF/k': 3, 'mFJFa': 7, 'muINBI': 4, 'FYZa': 3}
+                       'upINBI': 4, 'mMATa': 5, 'AINa': 2, 'BIN/k': 2, 'mINFa/k': 6, 'OZE/k': 3, 'mMPGa': 5, 'mEOMa': 7,
+                       'TEF/k': 3, 'mFJFa': 7, 'muINBI': 8, 'FYZa': 3}
     return programs, fields_division
 
 
@@ -285,6 +312,20 @@ def get_courses_with_only_one_enrollment(database: str, courses: dict) -> set:
     return only_one_enrollment_courses
 
 
+def get_courses_with_no_enrollment(database: str, courses: dict) -> set:
+    con = sqlite3.connect(database)
+    courses_rows = pd.read_sql_query(
+        """select * FROM predmet
+        where predmet.idpred not in
+        (SELECT export.idpred
+        FROM export);""", con)
+    no_enrollment_courses = set()
+    for index, row in courses_rows.iterrows():
+        no_enrollment_courses.add(courses[int(row['idpred'])])
+    con.close()
+    return no_enrollment_courses
+
+
 def get_doctoral_courses(database: str, courses: dict) -> set:
     con = sqlite3.connect(database)
     doctoral_rows = pd.read_sql_query(
@@ -319,16 +360,26 @@ def get_number_of_students_and_courses_per_years(database):
     return students_per_year, courses_per_year
 
 
-def teachers(all_data):
+def teachers(all_data, fields_division):
     bachelors = 0
     masters = 0
     for entry in all_data:
-        if entry[3].startswith('up'):
+        if fields_division[entry[3]] == 4:
             bachelors += 1
-        if entry[3].startswith('mu'):
+        if fields_division[entry[3]] == 8:
             masters += 1
     return bachelors, masters
 
+
+def computer_scientists(all_data, fields_division):
+    bachelors = 0
+    masters = 0
+    for entry in all_data:
+        if fields_division[entry[3]] == 2:
+            bachelors += 1
+        if fields_division[entry[3]] == 6:
+            masters += 1
+    return bachelors, masters
 
 
 class Evaluator:
@@ -341,37 +392,73 @@ class Evaluator:
     def evaluate(self, trained_model):
         RMSEs = []
         fields_RMSEs = []
+        F1s = []
+        fields_F1s = []
         for i in range(0, 8):
             fields_RMSEs.append([])
+            fields_F1s.append([])
         for data in self.test_data:
             # chcem predikovat predmety, ktore som skutocne zapisal
             reality = data[1]
             # na predikovanie posielam len predmety, ktore som mal zapisane -> pouzijeme data[0]
             prediction = trained_model.predict(data)
             RMSE = 0
+            TP = 0
+            FN = 0
+            FP = 0
             for i in range(self.number_of_courses):
                 if i in reality:
                     RMSE += np.power(prediction[i] - 1, 2)
                 else:
                     RMSE += np.power(prediction[i], 2)
+                if i in reality and prediction[i] >= 0.3:
+                    TP += 1
+                elif i in reality and prediction[i] < 0.3:
+                    FN += 1
+                elif i not in reality and prediction[i] >= 0.3:
+                    FP += 1
             RMSE /= self.RMSE_courses
             RMSE = np.sqrt(RMSE)
             RMSEs.append(RMSE)
             fields_RMSEs[self.fields_division[data[3]] - 1].append(RMSE)
-        total_score = np.sum(RMSEs)
-        total_score /= len(self.test_data)
-        score_per_field = {
+
+            if TP == 0:
+                F1s.append(0)
+                fields_F1s[self.fields_division[data[3]] - 1].append(0)
+                continue
+            precision = TP / (TP + FP)
+            recall = TP / (TP + FN)
+            F1 = (2 * precision * recall) / (precision + recall)
+            F1s.append(F1)
+            fields_F1s[self.fields_division[data[3]] - 1].append(F1)
+        total_score_RMSE = np.sum(RMSEs)
+        total_score_RMSE /= len(self.test_data)
+        total_score_F1 = np.sum(F1s)
+        total_score_F1 /= len(self.test_data)
+        score_per_field_RMSE = {
             'MAT_b': 0, 'INF_b': 0, 'FYZ_b': 0, 'UCITELSTVO_b': 0, 'MAT_m': 0, 'INF_m': 0, 'FYZ_m': 0, 'UCITELSTVO_m': 0
         }
-        keys = [k for k, v in score_per_field.items()]
+        score_per_field_F1 = {
+            'MAT_b': 0, 'INF_b': 0, 'FYZ_b': 0, 'UCITELSTVO_b': 0, 'MAT_m': 0, 'INF_m': 0, 'FYZ_m': 0, 'UCITELSTVO_m': 0
+        }
+        keys1 = [k for k, v in score_per_field_RMSE.items()]
         for i in range(len(fields_RMSEs)):
             if len(fields_RMSEs[i]) == 0:
-                score_per_field[keys[i]] = None
+                score_per_field_RMSE[keys1[i]] = None
                 continue
             score = np.sum(fields_RMSEs[i])
             score /= len(fields_RMSEs[i])
-            score_per_field[keys[i]] = score
-        return total_score, score_per_field
+            score_per_field_RMSE[keys1[i]] = score
+
+        keys2 = [k for k, v in score_per_field_F1.items()]
+        for i in range(len(fields_F1s)):
+            if len(fields_F1s[i]) == 0:
+                score_per_field_F1[keys2[i]] = None
+                continue
+            score = np.sum(fields_F1s[i])
+            score /= len(fields_F1s[i])
+            score_per_field_F1[keys2[i]] = score
+        return total_score_RMSE, score_per_field_RMSE, total_score_F1, score_per_field_F1
 
 
 class RandomRS:
