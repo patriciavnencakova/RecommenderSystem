@@ -6,120 +6,43 @@ from typing import Tuple
 import numpy as np
 import pandas as pd
 
-from all_data import ALL_DATA
-
 
 def main():
-    file1 = open("RMSE_JaccardIndex_subsample_0.8.txt", "w")
-    file2 = open("F1_JaccardIndex_subsample_0.8.txt", "w")
-    file3 = open("RMSE_HammingDistance_subsample_0.8.txt", "w")
-    file4 = open("F1_HammingDistance_subsample_0.8.txt", "w")
-    file5 = open("RMSE_Intersection_subsample_0.8.txt", "w")
-    file6 = open("F1_Intersection_subsample_0.8.txt", "w")
+    study_programmes, fields_division = get_programs("ais2022.db")
 
-    programs_dict, fields_division = get_programs("ais2022.db")
-    # print('pocet studijnych programov: ', len(programs_dict))
+    courses, courses_names = get_courses("ais2022.db")
+    same_courses = merge_same_courses("ais2022.db", courses)
 
-    courses_dict, courses_dict_names = get_courses("ais2022.db")
-    # print('pocet predmetov pred zlucenim:', len(courses_dict))
-    same_courses = merge_same_courses("ais2022.db", courses_dict)
-    # print('pocet predmetov po zluceni:', len(same_courses))
-
-    doctoral_courses = get_doctoral_courses("ais2022.db", courses_dict)
-    # print('doktorandske predmety:', len(doctoral_courses))
-
-    no_enrollment_courses = get_courses_with_no_enrollment("ais2022.db", courses_dict)
-    only_one_enrollment_courses = get_courses_with_only_one_enrollment("ais2022.db", courses_dict)
-    # print('predmety, ktore boli zapisane menej ako dvakrat:',
-    #       len(only_one_enrollment_courses.union(no_enrollment_courses)))
-
+    doctoral_courses = get_doctoral_courses("ais2022.db", courses)
+    no_enrollment_courses = get_courses_with_no_enrollment("ais2022.db", courses)
+    only_one_enrollment_courses = get_courses_with_only_one_enrollment("ais2022.db", courses)
     redundant_courses = doctoral_courses.union(only_one_enrollment_courses).union(no_enrollment_courses)
-    # print('celkovo predmety, ktore nezapocitavame:', len(redundant_courses))
-
     RMSE_courses = len(same_courses) - len(redundant_courses)
-    # print('predmety, ktore idu do RMSE:', RMSE_courses)
 
-    all_data = ALL_DATA
-    # print(len(ALL_DATA))
+    all_data = load_all_data("ais2022.db", courses)
 
-    # all_data = load_all_data("ais2022.db", courses_dict, programs_dict)
-    # print(all_data)
-
-    # 13 roznych akademickych rokov
     train_years = ['2015/16', '2016/17', '2017/18', '2018/19', '2019/20']
     test_years = ['2020/21', '2021/22']
-    percentage = 0.8
-    all_data = random.sample(all_data, int(len(all_data)*percentage))
-
     train_data, test_data = separate_data_into_test_and_train("ais2022.db", all_data, train_years, test_years)
-    evaluator = Evaluator(len(courses_dict), RMSE_courses, fields_division, test_data)
 
-    # JI = JaccardIndexRS(courses_dict, redundant_courses, 10)
-    # JI.train(train_data)
-    # my_data = my_data = [[1783, 1569, 1873, 4259, 1931, 174, 1733, 1526, 3485, 3447, 1302, 1871, 1874, 8, 4411, 182,
-    #                       1734, 1533], [], '2021/22', 'INF']
-    # JI.predict(my_data)
+    jaccard_index_rs = JaccardIndexRS(courses, redundant_courses, 15)
+    jaccard_index_rs.train(train_data)
+    my_data = [[1783, 1569, 1873, 4259, 1931, 174, 1733, 1526, 3485, 3447, 1302, 1871, 1874, 8, 4411, 182,
+                1734, 1533], [], '2021/22', 'INF']
+    prediction = jaccard_index_rs.predict(my_data)
+    for i in range(len(prediction)):
+        if prediction[i] != 0:
+            print(f"{i}: {prediction[i]}")
 
-    RS1 = JaccardIndexRS(courses_dict, redundant_courses, 15)
-    RS1.train(train_data)
-    total_score_RMSE, score_per_program_RMSE, total_score_F1, score_per_program_F1 = evaluator.evaluate(RS1)
-    file1.write(str(total_score_RMSE))
-    file1.write("{\n")
-    for k in score_per_program_RMSE.keys():
-        file1.write(F"'{k}': '{score_per_program_RMSE[k]}',\n")  # add comma at end of line
-    file1.write("}")
-    print(total_score_RMSE)
-    print(score_per_program_RMSE)
-
-    file2.write(str(total_score_F1))
-    file2.write("{\n")
-    for k in score_per_program_F1.keys():
-        file2.write(F"'{k}': '{score_per_program_F1[k]}',\n")  # add comma at end of line
-    file2.write("}")
-    print(total_score_F1)
-    print(score_per_program_F1)
-
-    RS2 = HammingDistanceRS(courses_dict, redundant_courses, 15)
-    RS2.train(train_data)
-    total_score_RMSE, score_per_program_RMSE, total_score_F1, score_per_program_F1 = evaluator.evaluate(RS2)
-    file3.write(str(total_score_RMSE))
-    file3.write("{\n")
-    for k in score_per_program_RMSE.keys():
-        file3.write(F"'{k}': '{score_per_program_RMSE[k]}',\n")  # add comma at end of line
-    file3.write("}")
-    print(total_score_RMSE)
-    print(score_per_program_RMSE)
-
-    file4.write(str(total_score_F1))
-    file4.write("{\n")
-    for k in score_per_program_F1.keys():
-        file4.write(F"'{k}': '{score_per_program_F1[k]}',\n")  # add comma at end of line
-    file4.write("}")
-    print(total_score_F1)
-    print(score_per_program_F1)
-
-    RS3 = IntersectionRS(courses_dict, redundant_courses, 15)
-    RS3.train(train_data)
-    total_score_RMSE, score_per_program_RMSE, total_score_F1, score_per_program_F1 = evaluator.evaluate(RS3)
-    file5.write(str(total_score_RMSE))
-    file5.write("{\n")
-    for k in score_per_program_RMSE.keys():
-        file5.write(F"'{k}': '{score_per_program_RMSE[k]}',\n")  # add comma at end of line
-    file5.write("}")
-    print(total_score_RMSE)
-    print(score_per_program_RMSE)
-
-    file6.write(str(total_score_F1))
-    file6.write("{\n")
-    for k in score_per_program_F1.keys():
-        file6.write(F"'{k}': '{score_per_program_F1[k]}',\n")  # add comma at end of line
-    file6.write("}")
-    print(total_score_F1)
-    print(score_per_program_F1)
+    evaluator = Evaluator(len(courses), RMSE_courses, fields_division, test_data)
+    total_score_RMSE, score_per_field_RMSE, total_score_F1, score_per_field_F1 = evaluator.evaluate(jaccard_index_rs)
+    print("total computed RMSE value: ", total_score_RMSE)
+    print(score_per_field_RMSE)
+    print("total computed F1-score value: ", total_score_F1)
+    print(score_per_field_F1)
 
 
-def load_all_data(database: str, courses: dict, programs: dict) -> list:
-    # data vo forme [mal_som_zapisane, zapisal_som, v_roku, stud_prog]
+def load_all_data(database: str, courses: dict) -> list:
     con = sqlite3.connect(database)
     students_rows = pd.read_sql_query("SELECT DISTINCT id FROM export", con)
     students_rows.reset_index()
@@ -130,12 +53,6 @@ def load_all_data(database: str, courses: dict, programs: dict) -> list:
     all_data = []
 
     for student in students:
-        # len 200 studentov pre jednoduchost
-        # counter = 0
-        # for student in students:
-        #     if counter == 3:
-        #         break
-        # for student in random.sample(students, 200):
         years_per_student_rows = pd.read_sql_query(f"SELECT DISTINCT akrok "
                                                    f"FROM export "
                                                    f"WHERE id = {student} "
@@ -145,30 +62,20 @@ def load_all_data(database: str, courses: dict, programs: dict) -> list:
         for index, row in years_per_student_rows.iterrows():
             years_per_student.append(row['akrok'])
 
-        # print("student", student)
-        # x_courses = predmety, ktore som mal
-        x_courses = []
+        courses_so_far = []
         for year in years_per_student:
             all_data_item = []
             y_courses_rows = pd.read_sql_query(f"SELECT idpred, skratkasp"
                                                f" FROM export"
                                                f" WHERE id = {student} AND akrok = '{year}'", con)
-            # y_courses_rows = predmety, ktore som zapisal
-            y_courses = []
+            courses_this_year = []
             program = str()
             for index, row in y_courses_rows.iterrows():
-                y_courses.append(courses[int(row['idpred'])])
+                courses_this_year.append(courses[int(row['idpred'])])
                 program = row['skratkasp']
-            # all_data_item.append(x_courses.copy())
-            # all_data_item.append(y_courses)
-            # all_data_item.append(year)
-            # all_data_item.append(programs[program])
-            # # print(all_data_item)
-            all_data_item.extend([x_courses.copy(), y_courses, year, program])
+            all_data_item.extend([courses_so_far.copy(), courses_this_year, year, program])
             all_data.append(all_data_item)
-            x_courses.extend(y_courses)
-        # counter += 1
-        # print()
+            courses_so_far.extend(courses_this_year)
     con.close()
     return all_data
 
@@ -187,23 +94,15 @@ def separate_data_into_test_and_train(
         years.append(row['akrok'])
     train_data = []
     test_data = []
-    # print(years[:number_of_tested_years])
     for entry in all_data:
         if entry[2] in test_years:
             test_data.append(entry)
         if entry[2] in train_years:
             train_data.append(entry)
-        # if entry[2] == '2021/22':
-        # zoberieme poslednych number_of_tested_years rokov za testovacie
-        # if entry[2] in years[:number_of_tested_years]:
-        #     test_data.append(entry)
-        # else:
-        #     train_data.append(entry)
     return train_data, test_data
 
 
 def get_courses(database: str) -> Tuple[dict, dict]:
-    # zoberieme predmety, ktore nie su doktorandske
     con = sqlite3.connect(database)
     courses_rows = pd.read_sql_query(
         """SELECT DISTINCT idpred, nazovpred, skratkapred
@@ -214,7 +113,6 @@ def get_courses(database: str) -> Tuple[dict, dict]:
     courses_names = {}
     counter = 0
     for index, row in courses_rows.iterrows():
-        # preindexovanie id predmetov
         idpred = int(row['idpred'])
         if idpred in courses.keys():
             continue
@@ -226,7 +124,6 @@ def get_courses(database: str) -> Tuple[dict, dict]:
 
 
 def get_programs(database: str) -> Tuple[dict, dict]:
-    # zoberieme studijne programy, ktore nie su doktorandske
     con = sqlite3.connect(database)
     programs_rows = pd.read_sql_query("SELECT DISTINCT skratkasp "
                                       "FROM export ", con)
@@ -234,7 +131,7 @@ def get_programs(database: str) -> Tuple[dict, dict]:
     for index, row in programs_rows.iterrows():
         programs[row['skratkasp']] = index
     con.close()
-    # 1 = MAT_b, 2 = INF_b, 3 = FYZ_b, 4 = UCITELSTVO_b, 5 = MAT_m, 6 = INF_m, 7 = FYZ_m, 8 = UCITELSTVO_m
+    # 1 = MAT-b, 2 = CS-b, 3 = PHY-b, 4 = TEA-b, 5 = MAT-m, 6 = CS-m, 7 = PHY-m, 8 = TEA-m
     fields_division = {'MAT': 1, 'PMA': 1, 'INF': 2, 'mMMN': 5, 'MMN': 1, 'AIN': 2, 'mFFP': 7, 'FYZ': 3, 'muMAFY': 8,
                        'BMF': 3, 'mAIN': 6, 'mMAT': 5, 'mEOM': 7, 'OZE': 3, 'mINF': 6, 'EFM': 1, 'mFBM': 7, 'muMAIN': 8,
                        'upMAIN': 4, 'mFBF': 7, 'upMAFY': 4, 'mIKV': 6, 'mEMM': 5, 'upINAN': 4, 'mPMS': 5, 'mFTF': 7,
@@ -247,36 +144,16 @@ def get_programs(database: str) -> Tuple[dict, dict]:
     return programs, fields_division
 
 
-# mam povodne id
-def get_old_courses(database: str, courses: dict) -> list:
-    con = sqlite3.connect(database)
-    old_courses_rows = pd.read_sql_query("SELECT DISTINCT idpred "
-                                         "FROM export "
-                                         "WHERE idpred NOT IN ( "
-                                         "SELECT DISTINCT idpred "
-                                         "FROM export "
-                                         "WHERE akrok IN ('2019/20', '2020/21', '2021/22'))", con)
-    old_courses_rows.reset_index()
-    old_courses = []
-    for index, row in old_courses_rows.iterrows():
-        old_courses.append(courses[int(row['idpred'])])
-    con.close()
-    return old_courses
-
-
 def merge_same_courses(database: str, courses: dict) -> dict:
     con = sqlite3.connect(database)
     courses_rows = pd.read_sql_query("SELECT * FROM predmet", con)
     duplicate_courses = {}
     for index, row in courses_rows.iterrows():
-        # ak je rovnaka skratka a zaroven nazov, tak ich zlucim
         key = f"{row['skratkapred']}_{row['nazovpred']}"
         parts = row['kodpred'].split("/")
-        # course = courses_dict[int(row['idpred'])]
         idpred = int(row['idpred'])
         if key in duplicate_courses:
             value = duplicate_courses[key]
-            # najaktualnejsia verzia je ta, ktora ma najvacsie cislo v kode predmetu
             if value['max_value'] < int(parts[-1]):
                 value['max_value'] = int(parts[-1])
                 value['max_id'] = courses[idpred]
@@ -340,48 +217,6 @@ def get_doctoral_courses(database: str, courses: dict) -> set:
     return doctoral_courses
 
 
-def get_number_of_students_and_courses_per_years(database):
-    con = sqlite3.connect(database)
-    entriees = pd.read_sql_query("SELECT id, akrok, idpred FROM export", con)
-    students_per_year = {}
-    courses_per_year = {}
-    for index, row in entriees.iterrows():
-        if row['akrok'] not in courses_per_year.keys():
-            courses_per_year[row['akrok']] = [row['idpred']]
-        else:
-            if row['idpred'] not in courses_per_year[row['akrok']]:
-                courses_per_year[row['akrok']].append(row['idpred'])
-
-        if row['akrok'] not in students_per_year.keys():
-            students_per_year[row['akrok']] = [row['id']]
-        else:
-            if row['id'] not in students_per_year[row['akrok']]:
-                students_per_year[row['akrok']].append(row['id'])
-    return students_per_year, courses_per_year
-
-
-def teachers(all_data, fields_division):
-    bachelors = 0
-    masters = 0
-    for entry in all_data:
-        if fields_division[entry[3]] == 4:
-            bachelors += 1
-        if fields_division[entry[3]] == 8:
-            masters += 1
-    return bachelors, masters
-
-
-def computer_scientists(all_data, fields_division):
-    bachelors = 0
-    masters = 0
-    for entry in all_data:
-        if fields_division[entry[3]] == 2:
-            bachelors += 1
-        if fields_division[entry[3]] == 6:
-            masters += 1
-    return bachelors, masters
-
-
 class Evaluator:
     def __init__(self, number_of_courses, RMSE_courses, fields_division, test_data):
         self.number_of_courses = number_of_courses
@@ -398,9 +233,7 @@ class Evaluator:
             fields_RMSEs.append([])
             fields_F1s.append([])
         for data in self.test_data:
-            # chcem predikovat predmety, ktore som skutocne zapisal
             reality = data[1]
-            # na predikovanie posielam len predmety, ktore som mal zapisane -> pouzijeme data[0]
             prediction = trained_model.predict(data)
             RMSE = 0
             TP = 0
@@ -436,10 +269,10 @@ class Evaluator:
         total_score_F1 = np.sum(F1s)
         total_score_F1 /= len(self.test_data)
         score_per_field_RMSE = {
-            'MAT_b': 0, 'INF_b': 0, 'FYZ_b': 0, 'UCITELSTVO_b': 0, 'MAT_m': 0, 'INF_m': 0, 'FYZ_m': 0, 'UCITELSTVO_m': 0
+            'MAT-b': 0, 'CS-b': 0, 'PHY-b': 0, 'TEA-b': 0, 'MAT-m': 0, 'CS-m': 0, 'PHY-m': 0, 'TEA-m': 0
         }
         score_per_field_F1 = {
-            'MAT_b': 0, 'INF_b': 0, 'FYZ_b': 0, 'UCITELSTVO_b': 0, 'MAT_m': 0, 'INF_m': 0, 'FYZ_m': 0, 'UCITELSTVO_m': 0
+            'MAT-b': 0, 'CS-b': 0, 'PHY-b': 0, 'TEA-b': 0, 'MAT-m': 0, 'CS-m': 0, 'PHY-m': 0, 'TEA-m': 0
         }
         keys1 = [k for k, v in score_per_field_RMSE.items()]
         for i in range(len(fields_RMSEs)):
@@ -461,21 +294,6 @@ class Evaluator:
         return total_score_RMSE, score_per_field_RMSE, total_score_F1, score_per_field_F1
 
 
-class RandomRS:
-    def __init__(self, courses, redundant_courses):
-        self.courses = courses
-        self.redundant_courses = redundant_courses
-
-    def predict(self, data):
-        result = list()
-        for i in range(len(self.courses)):
-            if i in self.redundant_courses:
-                result.append(0)
-                continue
-            result.append(random.uniform(0, 1))
-        return result
-
-
 class JaccardIndexRS:
     def __init__(self, courses, redundant_courses, n):
         self.data = None
@@ -487,7 +305,6 @@ class JaccardIndexRS:
         self.data = train_data
 
     def predict(self, data):
-        # vrati zoznam pravdepodobnosti, zapisania predmetov
         s1 = set(data[0])
         tuples = list()
         for dato in self.data:
@@ -498,13 +315,10 @@ class JaccardIndexRS:
                     jaccard_index = 1.0
             else:
                 jaccard_index = len(s1.intersection(s2)) / len(s1.union(s2))
-            # tuple vo formate (podobnost, predemty_na_zapisanie)
             our_tuple = (jaccard_index, dato[1])
             tuples.append(our_tuple)
         tuples.sort(reverse=True)
-        # print(tuples)
         top_n = tuples[:self.n]
-        # print(top_n)
         result = list()
         for i in range(len(self.courses)):
             if i in self.redundant_courses or i in s1:
@@ -515,14 +329,9 @@ class JaccardIndexRS:
                 if i in dato[1]:
                     counter += 1
             result.append(counter / self.n)
-
-        # for i in range(len(result)):
-        #     if result[i] != 0:
-        #         print(f"{i}: {result[i]}")
         return result
 
 
-# hamming distance = pocet rozdielnych => cim menej rozdielnych, tym lepsie
 class HammingDistanceRS:
     def __init__(self, courses, redundant_courses, n):
         self.data = None
@@ -534,7 +343,6 @@ class HammingDistanceRS:
         self.data = train_data
 
     def predict(self, data):
-        # vrati zoznam pravdepodobnosti, zapisania predmetov
         s1 = set(data[0])
         tuples = list()
         for dato in self.data:
@@ -545,13 +353,10 @@ class HammingDistanceRS:
                     hamming_distance = 0
             else:
                 hamming_distance = len(s1) + len(s2) - 2 * len(s1.intersection(s2))
-            # tuple vo formate (pocet_rozdielnych, predemty_na_zapisanie)
             our_tuple = (hamming_distance, dato[1])
             tuples.append(our_tuple)
         tuples.sort()
-        # print(tuples)
         top_n = tuples[:self.n]
-        # print(top_n)
         result = list()
         for i in range(len(self.courses)):
             if i in self.redundant_courses or i in s1:
@@ -562,14 +367,9 @@ class HammingDistanceRS:
                 if i in dato[1]:
                     counter += 1
             result.append(counter / self.n)
-
-        # for i in range(len(result)):
-        #     if result[i] != 0:
-        #         print(f"{i}: {result[i]}")
         return result
 
 
-# prienik => cim viac spolocnych, tym lepsie
 class IntersectionRS:
     def __init__(self, courses, redundant_courses, n):
         self.data = None
@@ -581,7 +381,6 @@ class IntersectionRS:
         self.data = train_data
 
     def predict(self, data):
-        # vrati zoznam pravdepodobnosti, zapisania predmetov
         s1 = set(data[0])
         tuples = list()
         for dato in self.data:
@@ -592,13 +391,10 @@ class IntersectionRS:
                     intersection = s.maxsize
             else:
                 intersection = len(s1.intersection(s2))
-            # tuple vo formate (pocet_rozdielnych, predemty_na_zapisanie)
             our_tuple = (intersection, dato[1])
             tuples.append(our_tuple)
         tuples.sort(reverse=True)
-        # print(tuples)
         top_n = tuples[:self.n]
-        # print(top_n)
         result = list()
         for i in range(len(self.courses)):
             if i in self.redundant_courses or i in s1:
@@ -609,10 +405,6 @@ class IntersectionRS:
                 if i in dato[1]:
                     counter += 1
             result.append(counter / self.n)
-
-        # for i in range(len(result)):
-        #     if result[i] != 0:
-        #         print(f"{i}: {result[i]}")
         return result
 
 
