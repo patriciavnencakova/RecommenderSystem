@@ -20,21 +20,30 @@ def main():
 
     all_data = load_all_data("ais2022.db", courses)
 
-    train_years = ['2015/16', '2016/17', '2017/18', '2018/19', '2019/20']
-    test_years = ['2020/21', '2021/22']
+    train_years = ["2015/16", "2016/17", "2017/18", "2018/19", "2019/20"]
+    test_years = ["2020/21", "2021/22"]
     train_data, test_data = separate_data_into_test_and_train("ais2022.db", all_data, train_years, test_years)
 
     jaccard_index_rs = JaccardIndexRS(courses, redundant_courses, 15)
     jaccard_index_rs.train(train_data)
-    my_data = [[1783, 1569, 1873, 4259, 1931, 174, 1733, 1526, 3485, 3447, 1302, 1871, 1874, 8, 4411, 182,
-                1734, 1533], [], '2021/22', 'INF']
+    my_data = [
+        [1783, 1569, 1873, 4259, 1931, 174, 1733, 1526, 3485, 3447, 1302, 1871, 1874, 8, 4411, 182, 1734, 1533],
+        [],
+        "2021/22",
+        "INF",
+    ]
     prediction = jaccard_index_rs.predict(my_data)
     for i in range(len(prediction)):
         if prediction[i] != 0:
             print(f"{i}: {prediction[i]}")
 
     evaluator = Evaluator(len(courses), RMSE_courses, fields_division, test_data)
-    total_score_RMSE, score_per_field_RMSE, total_score_F1, score_per_field_F1 = evaluator.evaluate(jaccard_index_rs)
+    (
+        total_score_RMSE,
+        score_per_field_RMSE,
+        total_score_F1,
+        score_per_field_F1,
+    ) = evaluator.evaluate(jaccard_index_rs)
     print("total computed RMSE value: ", total_score_RMSE)
     print(score_per_field_RMSE)
     print("total computed F1-score value: ", total_score_F1)
@@ -47,32 +56,40 @@ def load_all_data(database: str, courses: dict) -> list:
     students_rows.reset_index()
     students = []
     for index, row in students_rows.iterrows():
-        students.append(int(row['id']))
+        students.append(int(row["id"]))
 
     all_data = []
 
     for student in students:
-        years_per_student_rows = pd.read_sql_query(f"SELECT DISTINCT akrok "
-                                                   f"FROM export "
-                                                   f"WHERE id = {student} "
-                                                   f"ORDER BY akrok", con)
+        years_per_student_rows = pd.read_sql_query(
+            f"SELECT DISTINCT akrok "
+            f"FROM export "
+            f"WHERE id = {student} "
+            f"ORDER BY akrok",
+            con,
+        )
         years_per_student_rows.reset_index()
         years_per_student = []
         for index, row in years_per_student_rows.iterrows():
-            years_per_student.append(row['akrok'])
+            years_per_student.append(row["akrok"])
 
         courses_so_far = []
         for year in years_per_student:
             all_data_item = []
-            y_courses_rows = pd.read_sql_query(f"SELECT idpred, skratkasp"
-                                               f" FROM export"
-                                               f" WHERE id = {student} AND akrok = '{year}'", con)
+            y_courses_rows = pd.read_sql_query(
+                f"SELECT idpred, skratkasp"
+                f" FROM export"
+                f" WHERE id = {student} AND akrok = '{year}'",
+                con,
+            )
             courses_this_year = []
             program = str()
             for index, row in y_courses_rows.iterrows():
-                courses_this_year.append(courses[int(row['idpred'])])
-                program = row['skratkasp']
-            all_data_item.extend([courses_so_far.copy(), courses_this_year, year, program])
+                courses_this_year.append(courses[int(row["idpred"])])
+                program = row["skratkasp"]
+            all_data_item.extend(
+                [courses_so_far.copy(), courses_this_year, year, program]
+            )
             all_data.append(all_data_item)
             courses_so_far.extend(courses_this_year)
     con.close()
@@ -80,17 +97,16 @@ def load_all_data(database: str, courses: dict) -> list:
 
 
 def separate_data_into_test_and_train(
-        database: str,
-        all_data: list,
-        train_years: list,
-        test_years: list
+    database: str, all_data: list, train_years: list, test_years: list
 ) -> Tuple[list, list]:
     con = sqlite3.connect(database)
-    years_rows = pd.read_sql_query("SELECT DISTINCT akrok FROM export ORDER BY akrok DESC", con)
+    years_rows = pd.read_sql_query(
+        "SELECT DISTINCT akrok FROM export ORDER BY akrok DESC", con
+    )
     years_rows.reset_index()
     years = []
     for index, row in years_rows.iterrows():
-        years.append(row['akrok'])
+        years.append(row["akrok"])
     train_data = []
     test_data = []
     for entry in all_data:
@@ -106,17 +122,19 @@ def get_courses(database: str) -> Tuple[dict, dict]:
     courses_rows = pd.read_sql_query(
         """SELECT DISTINCT idpred, nazovpred, skratkapred
         FROM predmet
-        ORDER BY idpred""", con)
+        ORDER BY idpred""",
+        con,
+    )
 
     courses = {}
     courses_names = {}
     counter = 0
     for index, row in courses_rows.iterrows():
-        idpred = int(row['idpred'])
+        idpred = int(row["idpred"])
         if idpred in courses.keys():
             continue
         courses[idpred] = counter
-        courses_names[idpred] = row['nazovpred']
+        courses_names[idpred] = row["nazovpred"]
         counter += 1
     con.close()
     return courses, courses_names
@@ -124,11 +142,10 @@ def get_courses(database: str) -> Tuple[dict, dict]:
 
 def get_programs(database: str) -> Tuple[dict, dict]:
     con = sqlite3.connect(database)
-    programs_rows = pd.read_sql_query("SELECT DISTINCT skratkasp "
-                                      "FROM export ", con)
+    programs_rows = pd.read_sql_query("SELECT DISTINCT skratkasp " "FROM export ", con)
     programs = {}
     for index, row in programs_rows.iterrows():
-        programs[row['skratkasp']] = index
+        programs[row["skratkasp"]] = index
     con.close()
     # 1 = MAT-b, 2 = CS-b, 3 = PHY-b, 4 = TEA-b, 5 = MAT-m, 6 = CS-m, 7 = PHY-m, 8 = TEA-m
     fields_division = {'MAT': 1, 'PMA': 1, 'INF': 2, 'mMMN': 5, 'MMN': 1, 'AIN': 2, 'mFFP': 7, 'FYZ': 3, 'muMAFY': 8,
@@ -149,25 +166,25 @@ def merge_same_courses(database: str, courses: dict) -> dict:
     duplicate_courses = {}
     for index, row in courses_rows.iterrows():
         key = f"{row['skratkapred']}_{row['nazovpred']}"
-        parts = row['kodpred'].split("/")
-        idpred = int(row['idpred'])
+        parts = row["kodpred"].split("/")
+        idpred = int(row["idpred"])
         if key in duplicate_courses:
             value = duplicate_courses[key]
-            if value['max_value'] < int(parts[-1]):
-                value['max_value'] = int(parts[-1])
-                value['max_id'] = courses[idpred]
-            value['courses'].append(idpred)
+            if value["max_value"] < int(parts[-1]):
+                value["max_value"] = int(parts[-1])
+                value["max_id"] = courses[idpred]
+            value["courses"].append(idpred)
         else:
             value = {
-                'max_value': int(parts[-1]),
-                'max_id': courses[idpred],
-                'courses': [idpred]
+                "max_value": int(parts[-1]),
+                "max_id": courses[idpred],
+                "courses": [idpred],
             }
             duplicate_courses[key] = value
 
     for key, value in duplicate_courses.items():
-        for course in value['courses']:
-            courses[course] = value['max_id']
+        for course in value["courses"]:
+            courses[course] = value["max_id"]
     con.close()
     return duplicate_courses
 
@@ -175,15 +192,17 @@ def merge_same_courses(database: str, courses: dict) -> dict:
 def get_courses_with_only_one_enrollment(database: str, courses: dict) -> set:
     con = sqlite3.connect(database)
     courses_rows = pd.read_sql_query(
-        """select * FROM predmet
-        where predmet.idpred in
+        """SELECT * FROM predmet
+        WHERE predmet.idpred IN
         (SELECT export.idpred
         FROM export
         GROUP BY export.idpred
-        HAVING COUNT(export.idpred) = 1)""", con)
+        HAVING COUNT(export.idpred) = 1)""",
+        con,
+    )
     only_one_enrollment_courses = set()
     for index, row in courses_rows.iterrows():
-        only_one_enrollment_courses.add(courses[int(row['idpred'])])
+        only_one_enrollment_courses.add(courses[int(row["idpred"])])
     con.close()
     return only_one_enrollment_courses
 
@@ -191,13 +210,15 @@ def get_courses_with_only_one_enrollment(database: str, courses: dict) -> set:
 def get_courses_with_no_enrollment(database: str, courses: dict) -> set:
     con = sqlite3.connect(database)
     courses_rows = pd.read_sql_query(
-        """select * FROM predmet
-        where predmet.idpred not in
+        """SELECT * FROM predmet
+        where predmet.idpred NOT IN
         (SELECT export.idpred
-        FROM export);""", con)
+        FROM export);""",
+        con,
+    )
     no_enrollment_courses = set()
     for index, row in courses_rows.iterrows():
-        no_enrollment_courses.add(courses[int(row['idpred'])])
+        no_enrollment_courses.add(courses[int(row["idpred"])])
     con.close()
     return no_enrollment_courses
 
@@ -205,13 +226,14 @@ def get_courses_with_no_enrollment(database: str, courses: dict) -> set:
 def get_doctoral_courses(database: str, courses: dict) -> set:
     con = sqlite3.connect(database)
     doctoral_rows = pd.read_sql_query(
-        """SELECT *
-        FROM predmet""", con)
+        """SELECT * FROM predmet""",
+        con,
+    )
     doctoral_courses = set()
     for index, row in doctoral_rows.iterrows():
-        course = row['skratkapred']
-        if course.startswith('3-'):
-            doctoral_courses.add(courses[int(row['idpred'])])
+        course = row["skratkapred"]
+        if course.startswith("3-"):
+            doctoral_courses.add(courses[int(row["idpred"])])
     con.close()
     return doctoral_courses
 
@@ -290,7 +312,12 @@ class Evaluator:
             score = np.sum(fields_F1s[i])
             score /= len(fields_F1s[i])
             score_per_field_F1[keys2[i]] = score
-        return total_score_RMSE, score_per_field_RMSE, total_score_F1, score_per_field_F1
+        return (
+            total_score_RMSE,
+            score_per_field_RMSE,
+            total_score_F1,
+            score_per_field_F1,
+        )
 
 
 class JaccardIndexRS:
@@ -317,7 +344,7 @@ class JaccardIndexRS:
             our_tuple = (jaccard_index, dato[1])
             tuples.append(our_tuple)
         tuples.sort(reverse=True)
-        top_n = tuples[:self.n]
+        top_n = tuples[: self.n]
         result = list()
         for i in range(len(self.courses)):
             if i in self.redundant_courses or i in s1:
@@ -355,7 +382,7 @@ class HammingDistanceRS:
             our_tuple = (hamming_distance, dato[1])
             tuples.append(our_tuple)
         tuples.sort()
-        top_n = tuples[:self.n]
+        top_n = tuples[: self.n]
         result = list()
         for i in range(len(self.courses)):
             if i in self.redundant_courses or i in s1:
@@ -393,7 +420,7 @@ class IntersectionRS:
             our_tuple = (intersection, dato[1])
             tuples.append(our_tuple)
         tuples.sort(reverse=True)
-        top_n = tuples[:self.n]
+        top_n = tuples[: self.n]
         result = list()
         for i in range(len(self.courses)):
             if i in self.redundant_courses or i in s1:
